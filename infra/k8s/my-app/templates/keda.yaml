@@ -1,0 +1,29 @@
+{{- range $name, $svc := .Values.apps }}
+{{- if and $svc.enabled (hasKey $svc "keda") $svc.keda.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ $name }}-scaledobject-v4
+  namespace: {{ $.Values.namespace }}
+spec:
+  scaleTargetRef:
+    name: {{ $name }}-deployment-v4
+  minReplicaCount: {{ $svc.keda.minReplicaCount }}
+  maxReplicaCount: {{ $svc.keda.maxReplicaCount }}
+  triggers:
+  - type: cpu
+    metadata:
+      type: Utilization
+      value: "{{ $svc.keda.cpuUtilization }}"
+---
+{{- end }}
+{{- end }}
+
+
+
+
+
+
+
+
+

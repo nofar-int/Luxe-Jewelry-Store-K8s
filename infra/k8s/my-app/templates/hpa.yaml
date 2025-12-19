@@ -1,0 +1,23 @@
+{{- range $name, $svc := .Values.apps }}
+{{- if and $svc.enabled (hasKey $svc "hpa") }}
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $name }}-hpa-v4
+  namespace: {{ $.Values.namespace }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $name }}-deployment-v4
+  minReplicas: {{ $svc.hpa.minReplicas }}
+  maxReplicas: {{ $svc.hpa.maxReplicas }}
+  targetCPUUtilizationPercentage: {{ $svc.hpa.targetCPUUtilizationPercentage }}
+---
+{{- end }}
+{{- end }}
+
+
+
+
+

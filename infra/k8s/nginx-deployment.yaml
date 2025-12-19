@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: demo-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:latest
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-html
+              mountPath: /usr/share/nginx/html
+          env:
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: nginx-api-secret
+                  key: API_KEY
+      volumes:
+        - name: nginx-html
+          persistentVolumeClaim:
+            claimName: nginx-pvc

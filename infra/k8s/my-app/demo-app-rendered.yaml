@@ -1,0 +1,373 @@
+---
+# Source: demo-app/templates/pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nginx-pvc-v4
+  namespace: demo-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# Source: demo-app/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service-v4
+  namespace: demo-app
+spec:
+  selector:
+    app: auth
+  ports:
+    - protocol: TCP
+      port: 8001
+      targetPort: 8001
+  type: ClusterIP
+---
+# Source: demo-app/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service-v4
+  namespace: demo-app
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
+---
+# Source: demo-app/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service-v4
+  namespace: demo-app
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+  type: ClusterIP
+---
+# Source: demo-app/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service-v4
+  namespace: demo-app
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+---
+# Source: demo-app/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-deployment-v4
+  namespace: demo-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+        - name: auth
+          image: "nofarpanker/auth-service:latest"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8001
+          resources:
+            limits:
+              cpu: 600m
+              memory: 512Mi
+            requests:
+              cpu: 300m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+---
+# Source: demo-app/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment-v4
+  namespace: demo-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: "nofarpanker/backend:latest"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          resources:
+            limits:
+              cpu: 600m
+              memory: 512Mi
+            requests:
+              cpu: 300m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 2
+---
+# Source: demo-app/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment-v4
+  namespace: demo-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: "nofarpanker/luxe-jewelry-store-front:latest"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 2048Mi
+            requests:
+              cpu: 500m
+              memory: 1024Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+---
+# Source: demo-app/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment-v4
+  namespace: demo-app
+spec:
+  replicas: 
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: "nginx:latest"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          env:
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: nginx-api-secret
+                  key: API_KEY
+          volumeMounts:
+            - name: storage
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: nginx-pvc-v4
+---
+# Source: demo-app/templates/hpa.yaml
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: auth-hpa-v4
+  namespace: demo-app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: auth-deployment-v4
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 50
+---
+# Source: demo-app/templates/hpa.yaml
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa-v4
+  namespace: demo-app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend-deployment-v4
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 50
+---
+# Source: demo-app/templates/hpa.yaml
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frontend-hpa-v4
+  namespace: demo-app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: frontend-deployment-v4
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 50
+---
+# Source: demo-app/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demo-app-ingress-v4
+  namespace: demo-app
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: demo-app.local
+      http:
+        paths:
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service-v4
+                port:
+                  number: 8001
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service-v4
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service-v4
+                port:
+                  number: 3000
+---
+# Source: demo-app/templates/keda.yaml
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: auth-scaledobject-v4
+  namespace: demo-app
+spec:
+  scaleTargetRef:
+    name: auth-deployment-v4
+  minReplicaCount: 1
+  maxReplicaCount: 5
+  triggers:
+  - type: cpu
+    metadata:
+      type: Utilization
+      value: "50"
+---
+# Source: demo-app/templates/keda.yaml
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: backend-scaledobject-v4
+  namespace: demo-app
+spec:
+  scaleTargetRef:
+    name: backend-deployment-v4
+  minReplicaCount: 1
+  maxReplicaCount: 5
+  triggers:
+  - type: cpu
+    metadata:
+      type: Utilization
+      value: "50"
+---
+# Source: demo-app/templates/keda.yaml
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: frontend-scaledobject-v4
+  namespace: demo-app
+spec:
+  scaleTargetRef:
+    name: frontend-deployment-v4
+  minReplicaCount: 1
+  maxReplicaCount: 5
+  triggers:
+  - type: cpu
+    metadata:
+      type: Utilization
+      value: "50"

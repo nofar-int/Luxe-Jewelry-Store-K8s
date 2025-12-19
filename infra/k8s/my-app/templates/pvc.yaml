@@ -1,0 +1,23 @@
+{{- range $name, $svc := .Values.apps }}
+{{- if and $svc.enabled (hasKey $svc "pvc") $svc.pvc.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $name }}-pvc-v4
+  namespace: {{ $.Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ $svc.pvc.storage }}
+---
+{{- end }}
+{{- end }}
+
+
+
+
+
+
+

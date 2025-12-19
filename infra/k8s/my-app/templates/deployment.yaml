@@ -1,0 +1,58 @@
+{{- range $name, $svc := .Values.apps }}
+{{- if $svc.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}-deployment-v4
+  namespace: {{ $.Values.namespace }}
+spec:
+  replicas: {{ $svc.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+    spec:
+      containers:
+        - name: {{ $name }}
+          image: "{{ $svc.image.repository }}:{{ $svc.image.tag }}"
+          imagePullPolicy: {{ $svc.image.pullPolicy }}
+          ports:
+            - containerPort: {{ default $svc.service.targetPort $svc.service.port }}
+          {{- if $svc.resources }}
+          resources:
+{{ toYaml $svc.resources | indent 12 }}
+          {{- end }}
+          {{- if $svc.readinessProbe }}
+          readinessProbe:
+{{ toYaml $svc.readinessProbe | indent 12 }}
+          {{- end }}
+          {{- if $svc.livenessProbe }}
+          livenessProbe:
+{{ toYaml $svc.livenessProbe | indent 12 }}
+          {{- end }}
+          {{- if and (hasKey $svc "env") $svc.env }}
+          env:
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $svc.env.API_KEY }}
+                  key: API_KEY
+          {{- end }}
+          {{- if and (hasKey $svc "pvc") $svc.pvc.enabled }}
+          volumeMounts:
+            - name: storage
+              mountPath: {{ $svc.pvc.mountPath }}
+          {{- end }}
+      {{- if and (hasKey $svc "pvc") $svc.pvc.enabled }}
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: {{ $name }}-pvc-v4
+      {{- end }}
+---
+{{- end }}
+{{- end }}
+

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: demo-app
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80        # פורט פנימי ב־Cluster
+      targetPort: 3000  # פורט שבו ה־frontend מאזין בתוך הקונטיינר
+  type: ClusterIP

@@ -1,0 +1,148 @@
+namespace: demo-app
+
+apps:
+  auth:
+    enabled: true
+    replicaCount: 1
+    image:
+      repository: nofarpanker/auth-service
+      tag: latest
+      pullPolicy: Always
+    service:
+      port: 8001
+      targetPort: 8001
+    resources:
+      requests:
+        cpu: 300m
+        memory: 256Mi
+      limits:
+        cpu: 600m
+        memory: 512Mi
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: 8001
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 2
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 8001
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 2
+    hpa:
+      minReplicas: 1
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 50
+    keda:
+      enabled: true
+      minReplicaCount: 1
+      maxReplicaCount: 5
+      cpuUtilization: "50"
+
+  backend:
+    enabled: true
+    replicaCount: 1
+    image:
+      repository: nofarpanker/backend
+      tag: latest
+      pullPolicy: Always
+    service:
+      port: 8000
+      targetPort: 8000
+    resources:
+      requests:
+        cpu: 300m
+        memory: 256Mi
+      limits:
+        cpu: 600m
+        memory: 512Mi
+    readinessProbe:
+      httpGet:
+        path: /
+        port: 8000
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 2
+    livenessProbe:
+      httpGet:
+        path: /
+        port: 8000
+      initialDelaySeconds: 20
+      periodSeconds: 10
+      timeoutSeconds: 2
+    hpa:
+      minReplicas: 1
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 50
+    keda:
+      enabled: true
+      minReplicaCount: 1
+      maxReplicaCount: 5
+      cpuUtilization: "50"
+
+  frontend:
+    enabled: true
+    replicaCount: 1
+    image:
+      repository: nofarpanker/luxe-jewelry-store-front
+      tag: latest
+      pullPolicy: Always
+    service:
+      port: 3000
+      targetPort: 3000
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1024Mi
+      limits:
+        cpu: 1000m
+        memory: 2048Mi
+    readinessProbe:
+      httpGet:
+        path: /
+        port: 3000
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 2
+    livenessProbe:
+      httpGet:
+        path: /
+        port: 3000
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 2
+    hpa:
+      minReplicas: 1
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 50
+    keda:
+      enabled: true
+      minReplicaCount: 1
+      maxReplicaCount: 5
+      cpuUtilization: "50"
+
+  nginx:
+    enabled: true
+    image:
+      repository: nginx
+      tag: latest
+      pullPolicy: Always
+    service:
+      port: 80
+      targetPort: 80
+    pvc:
+      enabled: true
+      mountPath: /usr/share/nginx/html
+      storage: 1Gi
+    env:
+      API_KEY: nginx-api-secret
+
+
+
+
+
+
+
