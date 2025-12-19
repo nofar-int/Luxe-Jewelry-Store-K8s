@@ -9,7 +9,7 @@ kind: Pod
 spec:
   containers:
   - name: jenkins-agent
-    image: jenkins-agent:latest
+    image: jenkins/inbound-agent:latest
     command:
     - cat
     tty: true
