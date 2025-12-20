@@ -3,9 +3,14 @@
 pipeline {
     agent {
         kubernetes {
+            // מוסיפים label ברור שה-cloud מזהה
+            label 'jenkins-agent'
             yaml '''
 apiVersion: v1
 kind: Pod
+metadata:
+  labels:
+    jenkins-agent: "true"
 spec:
   containers:
   - name: jenkins-agent
