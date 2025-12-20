@@ -3,7 +3,8 @@
 pipeline {
     agent {
         kubernetes {
-            inheritFrom 'default' // אם יש לך template סטטי ב-Jenkins, או אפשר להשאיר podTemplate inline
+            // label חוקי בלבד
+            label 'jenkins-agent'
             yaml '''
 apiVersion: v1
 kind: Pod
@@ -171,5 +172,6 @@ spec:
         }
     }
 }
+
 
 
