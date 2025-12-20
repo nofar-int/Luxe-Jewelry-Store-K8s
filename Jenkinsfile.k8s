@@ -3,24 +3,8 @@
 pipeline {
     agent {
         kubernetes {
+            // משתמש ב-Pod Template שהוגדר ב-UI
             label 'jenkins-agent'
-            yaml '''
-apiVersion: v1
-kind: Pod
-metadata:
-  labels:
-    jenkins-agent: "true"
-spec:
-  serviceAccountName: jenkins
-  restartPolicy: Never
-  containers:
-  - name: jnlp
-    image: jenkins/inbound-agent:latest
-    imagePullPolicy: Always
-    command:
-    - cat
-    tty: true
-'''
         }
     }
 
@@ -72,11 +56,14 @@ spec:
                     steps {
                         catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
                             sh 'mkdir -p reports/pylint'
-                            lintPython("auth-service/*.py backend/*.py jewelry-store/*.py",
-                                       "reports/pylint/pylint_report.txt")
+                            lintPython(
+                                "auth-service/*.py backend/*.py jewelry-store/*.py",
+                                "reports/pylint/pylint_report.txt"
+                            )
                         }
                     }
                 }
+
                 stage('Unit Tests') {
                     steps {
                         catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
@@ -90,18 +77,22 @@ spec:
 
         stage('Publish HTML Reports') {
             steps {
-                publishHTML([allowMissing: true,
-                             alwaysLinkToLastBuild: true,
-                             keepAll: true,
-                             reportDir: 'reports/pylint',
-                             reportFiles: 'pylint_report.txt',
-                             reportName: 'Pylint Report'])
-                publishHTML([allowMissing: true,
-                             alwaysLinkToLastBuild: true,
-                             keepAll: true,
-                             reportDir: 'reports',
-                             reportFiles: 'unit_test_report.html',
-                             reportName: 'Unit Test Report'])
+                publishHTML([
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'reports/pylint',
+                    reportFiles: 'pylint_report.txt',
+                    reportName: 'Pylint Report'
+                ])
+                publishHTML([
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'reports',
+                    reportFiles: 'unit_test_report.html',
+                    reportName: 'Unit Test Report'
+                ])
             }
         }
 
@@ -125,10 +116,15 @@ spec:
                         [name: 'jewelry-store', dockerfile: 'infra/Dockerfile.frontend', context: '.']
                     ]
 
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-nofarpanker',
-                                                     usernameVariable: 'DOCKER_USER',
-                                                     passwordVariable: 'DOCKER_PASS')]) {
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'docker-hub-nofarpanker',
+                            usernameVariable: 'DOCKER_USER',
+                            passwordVariable: 'DOCKER_PASS'
+                        )
+                    ]) {
                         sh 'docker login -u $DOCKER_USER -p $DOCKER_PASS'
+
                         for (s in services) {
                             sh """
                                 echo "=== Build & Push ${s.name} ==="
@@ -153,7 +149,6 @@ spec:
                 '''
             }
         }
-
     }
 
     post {
@@ -171,6 +166,7 @@ spec:
         }
     }
 }
+
 
 
 
