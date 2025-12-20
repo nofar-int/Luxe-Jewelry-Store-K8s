@@ -3,19 +3,18 @@
 pipeline {
     agent {
         kubernetes {
-            // label חוקי בלבד
             label 'jenkins-agent'
             yaml '''
 apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    app: jenkins-agent
+    jenkins-agent: "true"
 spec:
   serviceAccountName: jenkins
   restartPolicy: Never
   containers:
-  - name: jenkins-agent
+  - name: jnlp
     image: jenkins/inbound-agent:latest
     imagePullPolicy: Always
     command:
@@ -172,6 +171,7 @@ spec:
         }
     }
 }
+
 
 
 
