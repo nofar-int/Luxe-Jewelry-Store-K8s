@@ -3,8 +3,7 @@
 pipeline {
     agent {
         kubernetes {
-            // משתמש ב-Pod Template שהוגדר ב-UI
-            label 'jenkins-agent'
+            inheritFrom 'jenkins-agent'
         }
     }
 
@@ -36,16 +35,11 @@ pipeline {
             steps {
                 sh '''
                     echo "=== בדיקת התקנות בסיסיות ==="
-                    docker --version
-                    docker-compose --version || true
                     git --version
                     python3 --version
                     pip3 --version
                     node --version
                     npm --version
-                    snyk --version
-                    pylint --version
-                    pytest --version
                 '''
             }
         }
@@ -63,7 +57,6 @@ pipeline {
                         }
                     }
                 }
-
                 stage('Unit Tests') {
                     steps {
                         catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
@@ -96,52 +89,9 @@ pipeline {
             }
         }
 
-        stage('Clean Old Containers & Images') {
-            steps {
-                sh '''
-                    echo "=== ניקוי קונטיינרים ותמונות ישנים ==="
-                    docker-compose down || true
-                    docker rm -f auth-service backend jewelry-store || true
-                    docker rmi -f auth-service backend jewelry-store || true
-                '''
-            }
-        }
-
-        stage('Build & Push Services') {
-            steps {
-                script {
-                    def services = [
-                        [name: 'auth-service', dockerfile: 'infra/Dockerfile.auth', context: '.'],
-                        [name: 'backend', dockerfile: 'infra/Dockerfile.backend', context: '.'],
-                        [name: 'jewelry-store', dockerfile: 'infra/Dockerfile.frontend', context: '.']
-                    ]
-
-                    withCredentials([
-                        usernamePassword(
-                            credentialsId: 'docker-hub-nofarpanker',
-                            usernameVariable: 'DOCKER_USER',
-                            passwordVariable: 'DOCKER_PASS'
-                        )
-                    ]) {
-                        sh 'docker login -u $DOCKER_USER -p $DOCKER_PASS'
-
-                        for (s in services) {
-                            sh """
-                                echo "=== Build & Push ${s.name} ==="
-                                docker build -f ${s.dockerfile} -t ${s.name} ${s.context}
-                                docker tag ${s.name} $DOCKER_USER/${s.name}:latest
-                                docker push $DOCKER_USER/${s.name}:latest
-                            """
-                        }
-                    }
-                }
-            }
-        }
-
         stage('Deploy App in Kubernetes') {
             steps {
                 sh '''
-                    echo "=== Deploying to Kubernetes (namespace: jenkins) ==="
                     kubectl apply -f infra/k8s/deployment.yaml -n jenkins
                     kubectl rollout status deployment/auth-deployment -n jenkins
                     kubectl rollout status deployment/backend-deployment -n jenkins
@@ -152,9 +102,6 @@ pipeline {
     }
 
     post {
-        always {
-            sh 'docker logout || true'
-        }
         success {
             echo "✅ כל השלבים הושלמו בהצלחה!"
         }
@@ -166,8 +113,3 @@ pipeline {
         }
     }
 }
-
-
-
-
-
