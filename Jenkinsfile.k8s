@@ -4,7 +4,7 @@ pipeline {
     agent {
         kubernetes {
             label 'jenkins-agent'       // חייב להתאים ל־label שהגדרת ב־Pod Template
-            defaultContainer 'jnlp'     // container שבו ירוצו כל השלבים
+            defaultContainer 'tools'    // container שבו ירוצו כל השלבים
         }
     }
 
@@ -33,14 +33,16 @@ pipeline {
 
         stage('Prepare Environment') {
             steps {
-                sh '''
-                    echo "=== בדיקת התקנות בסיסיות ==="
-                    git --version
-                    python3 --version
-                    pip3 --version
-                    node --version
-                    npm --version
-                '''
+                container('tools') {
+                    sh '''
+                        echo "=== בדיקת התקנות בסיסיות ==="
+                        git --version
+                        python3 --version
+                        pip3 --version
+                        node --version
+                        npm --version
+                    '''
+                }
             }
         }
 
@@ -48,20 +50,24 @@ pipeline {
             parallel {
                 stage('Pylint Analysis') {
                     steps {
-                        catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                            sh 'mkdir -p reports/pylint'
-                            lintPython(
-                                "auth-service/*.py backend/*.py jewelry-store/*.py",
-                                "reports/pylint/pylint_report.txt"
-                            )
+                        container('tools') {
+                            catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                                sh 'mkdir -p reports/pylint'
+                                lintPython(
+                                    "auth-service/*.py backend/*.py jewelry-store/*.py",
+                                    "reports/pylint/pylint_report.txt"
+                                )
+                            }
                         }
                     }
                 }
                 stage('Unit Tests') {
                     steps {
-                        catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                            sh 'mkdir -p reports'
-                            runPytest("reports/unit_test_report.html")
+                        container('tools') {
+                            catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                                sh 'mkdir -p reports'
+                                runPytest("reports/unit_test_report.html")
+                            }
                         }
                     }
                 }
@@ -70,33 +76,37 @@ pipeline {
 
         stage('Publish HTML Reports') {
             steps {
-                publishHTML([
-                    allowMissing: true,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: 'reports/pylint',
-                    reportFiles: 'pylint_report.txt',
-                    reportName: 'Pylint Report'
-                ])
-                publishHTML([
-                    allowMissing: true,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: 'reports',
-                    reportFiles: 'unit_test_report.html',
-                    reportName: 'Unit Test Report'
-                ])
+                container('tools') {
+                    publishHTML([
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'reports/pylint',
+                        reportFiles: 'pylint_report.txt',
+                        reportName: 'Pylint Report'
+                    ])
+                    publishHTML([
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'reports',
+                        reportFiles: 'unit_test_report.html',
+                        reportName: 'Unit Test Report'
+                    ])
+                }
             }
         }
 
         stage('Deploy App in Kubernetes') {
             steps {
-                sh '''
-                    kubectl apply -f infra/k8s/deployment.yaml -n jenkins
-                    kubectl rollout status deployment/auth-deployment -n jenkins
-                    kubectl rollout status deployment/backend-deployment -n jenkins
-                    kubectl rollout status deployment/frontend-deployment -n jenkins
-                '''
+                container('tools') {
+                    sh '''
+                        kubectl apply -f infra/k8s/deployment.yaml -n jenkins
+                        kubectl rollout status deployment/auth-deployment -n jenkins
+                        kubectl rollout status deployment/backend-deployment -n jenkins
+                        kubectl rollout status deployment/frontend-deployment -n jenkins
+                    '''
+                }
             }
         }
     }
@@ -113,5 +123,6 @@ pipeline {
         }
     }
 }
+
 
 
