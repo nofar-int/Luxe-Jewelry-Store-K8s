@@ -3,7 +3,9 @@
 pipeline {
     agent {
         kubernetes {
-            inheritFrom 'jenkins-agent'
+            // כאן מציינים את label של הפוד טמפלט שהגדרת ב-UI
+            label 'jenkins-agent'
+            defaultContainer 'jnlp'
         }
     }
 
