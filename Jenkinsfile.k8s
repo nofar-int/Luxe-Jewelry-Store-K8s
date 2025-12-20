@@ -3,7 +3,6 @@
 pipeline {
     agent {
         kubernetes {
-            // מוסיפים label ברור שה-cloud מזהה
             label 'jenkins-agent'
             yaml '''
 apiVersion: v1
@@ -66,7 +65,7 @@ spec:
 
         stage('Static Analysis') {
             parallel {
-                stage('🔍 Pylint Analysis') {
+                stage('Pylint Analysis') {
                     steps {
                         catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
                             sh 'mkdir -p reports/pylint'
@@ -75,7 +74,7 @@ spec:
                         }
                     }
                 }
-                stage('🧪 Unit Tests') {
+                stage('Unit Tests') {
                     steps {
                         catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
                             sh 'mkdir -p reports'
