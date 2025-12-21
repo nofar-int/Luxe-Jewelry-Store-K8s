@@ -22,6 +22,7 @@ pipeline {
         SNYK_TOKEN = credentials('SNYK_TOKEN')
         PYTHONPATH = "${WORKSPACE}"
         PATH = "/opt/jenkins_venv/bin:$PATH"
+        APP_NAMESPACE = "demo-app"
     }
 
     stages {
@@ -57,8 +58,7 @@ pipeline {
                             catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
                                 sh '''
                                     mkdir -p reports/pylint
-                                    pylint auth-service/*.py backend/*.py jewelry-store/*.py \
-                                      || true
+                                    pylint auth-service/*.py backend/*.py jewelry-store/*.py || true
                                 '''
                             }
                         }
@@ -71,8 +71,7 @@ pipeline {
                             catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
                                 sh '''
                                     mkdir -p reports
-                                    pytest --html=reports/unit_test_report.html --self-contained-html \
-                                      || true
+                                    pytest --html=reports/unit_test_report.html --self-contained-html || true
                                 '''
                             }
                         }
@@ -109,15 +108,19 @@ pipeline {
             steps {
                 container('tools') {
                     sh '''
-                        echo "📦 Deploying all Kubernetes manifests"
+                        echo "📦 Deploying application to namespace: ${APP_NAMESPACE}"
+
+                        kubectl get namespace ${APP_NAMESPACE} || kubectl create namespace ${APP_NAMESPACE}
+
+                        echo "📄 Applying Kubernetes manifests:"
                         ls infra/k8s
 
-                        kubectl apply -f infra/k8s/ -n jenkins
+                        kubectl apply -f infra/k8s/ -n ${APP_NAMESPACE}
 
                         echo "⏳ Waiting for deployments rollout"
-                        kubectl rollout status deployment/auth-deployment -n jenkins
-                        kubectl rollout status deployment/backend-deployment -n jenkins
-                        kubectl rollout status deployment/frontend-deployment -n jenkins
+                        kubectl rollout status deployment/auth-deployment -n ${APP_NAMESPACE}
+                        kubectl rollout status deployment/backend-deployment -n ${APP_NAMESPACE}
+                        kubectl rollout status deployment/frontend-deployment -n ${APP_NAMESPACE}
                     '''
                 }
             }
@@ -129,13 +132,14 @@ pipeline {
             echo "✅ הפייפליין הסתיים בהצלחה מלאה"
         }
         unstable {
-            echo "⚠️ הפייפליין הסתיים עם אזהרות (בדיקות / לינט)"
+            echo "⚠️ הפייפליין הסתיים עם אזהרות (לינט / בדיקות)"
         }
         failure {
             echo "❌ הפייפליין נכשל – בדקי לוגים"
         }
     }
 }
+
 
 
 
