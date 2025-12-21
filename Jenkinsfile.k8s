@@ -108,35 +108,35 @@ pipeline {
             steps {
                 container('tools') {
                     sh '''
-  echo "📦 Deploying application to namespace: ${APP_NAMESPACE}"
+echo "📦 Deploying application to namespace: ${APP_NAMESPACE}"
 
-                echo "📄 Applying Deployments:"
-                kubectl apply -f infra/k8s/auth-deployment.yaml -n ${APP_NAMESPACE}
-                kubectl apply -f infra/k8s/backend-deployment.yaml -n ${APP_NAMESPACE}
-                kubectl apply -f infra/k8s/fronted-deployment.yaml -n ${APP_NAMESPACE}
+echo "📄 Applying Deployments:"
+kubectl apply -f infra/k8s/auth-deployment.yaml -n ${APP_NAMESPACE}
+kubectl apply -f infra/k8s/backend-deployment.yaml -n ${APP_NAMESPACE}
+kubectl apply -f infra/k8s/frontend-deployment.yaml -n ${APP_NAMESPACE}
 
-                echo "📄 Applying Services:"
-                kubectl apply -f infra/k8s/service-auth.yaml -n ${APP_NAMESPACE}
-                kubectl apply -f infra/k8s/service-backend.yaml -n ${APP_NAMESPACE}
-                kubectl apply -f infra/k8s/service-fronted.yaml -n ${APP_NAMESPACE}
+echo "📄 Applying Services:"
+kubectl apply -f infra/k8s/service-auth.yaml -n ${APP_NAMESPACE}
+kubectl apply -f infra/k8s/service-backend.yaml -n ${APP_NAMESPACE}
+kubectl apply -f infra/k8s/service-frontend.yaml -n ${APP_NAMESPACE}
 
-                echo "📄 Applying HPA & KEDA (מניעת כשל הרשאות):"
-                kubectl apply -f infra/k8s/auth-hpa.yaml -n ${APP_NAMESPACE} || true
-                kubectl apply -f infra/k8s/backend-hpa.yaml -n ${APP_NAMESPACE} || true
-                kubectl apply -f infra/k8s/frontend-hpa.yaml -n ${APP_NAMESPACE} || true
-                kubectl apply -f infra/k8s/auth-keda.yaml -n ${APP_NAMESPACE} || true
-                kubectl apply -f infra/k8s/backend-keda.yaml -n ${APP_NAMESPACE} || true
-                kubectl apply -f infra/k8s/fronted-keda.yaml -n ${APP_NAMESPACE} || true
+echo "📄 Applying HPA & KEDA (skip if forbidden):"
+kubectl apply -f infra/k8s/auth-hpa.yaml -n ${APP_NAMESPACE} || true
+kubectl apply -f infra/k8s/backend-hpa.yaml -n ${APP_NAMESPACE} || true
+kubectl apply -f infra/k8s/frontend-hpa.yaml -n ${APP_NAMESPACE} || true
+kubectl apply -f infra/k8s/auth-keda.yaml -n ${APP_NAMESPACE} || true
+kubectl apply -f infra/k8s/backend-keda.yaml -n ${APP_NAMESPACE} || true
+kubectl apply -f infra/k8s/frontend-keda.yaml -n ${APP_NAMESPACE} || true
 
-                echo "📄 Applying Ingress & PVC:"
-                kubectl apply -f infra/k8s/ingress.yaml -n ${APP_NAMESPACE} || true
-                kubectl apply -f infra/k8s/nginx-pvc.yaml -n ${APP_NAMESPACE} || true
+echo "📄 Applying Ingress & PVC (skip if forbidden):"
+kubectl apply -f infra/k8s/ingress.yaml -n ${APP_NAMESPACE} || true
+kubectl apply -f infra/k8s/nginx-pvc.yaml -n ${APP_NAMESPACE} || true
 
-                echo "⏳ Waiting for deployments rollout"
-                kubectl rollout status deployment/auth-deployment -n ${APP_NAMESPACE}
-                kubectl rollout status deployment/backend-deployment -n ${APP_NAMESPACE}
-                kubectl rollout status deployment/fronted-deployment -n ${APP_NAMESPACE}
-             '''   
+echo "⏳ Waiting for deployments rollout"
+kubectl rollout status deployment/auth-deployment -n ${APP_NAMESPACE}
+kubectl rollout status deployment/backend-deployment -n ${APP_NAMESPACE}
+kubectl rollout status deployment/frontend-deployment -n ${APP_NAMESPACE}
+                    '''   
                 }
             }
         }
@@ -154,8 +154,3 @@ pipeline {
         }
     }
 }
-
-
-
-
-
