@@ -19,25 +19,27 @@ pipeline {
     }
 
     environment {
-        SNYK_TOKEN = credentials('SNYK_TOKEN')
-        PYTHONPATH = "${WORKSPACE}"
-        PATH = "/opt/jenkins_venv/bin:$PATH"
+        SNYK_TOKEN   = credentials('SNYK_TOKEN')
+        PYTHONPATH   = "${WORKSPACE}"
+        PATH         = "/opt/jenkins_venv/bin:$PATH"
         APP_NAMESPACE = "demo-app"
     }
 
     stages {
 
+        /* ================= CHECKOUT ================= */
         stage('Checkout SCM') {
             steps {
                 checkout scm
             }
         }
 
+        /* ================= PREPARE ================= */
         stage('Prepare Environment') {
             steps {
                 container('tools') {
                     sh '''
-                        echo "=== בדיקת התקנות בסיסיות ==="
+                        echo "=== Environment Check ==="
                         git --version
                         python3 --version
                         pip3 --version
@@ -49,6 +51,7 @@ pipeline {
             }
         }
 
+        /* ================= STATIC ANALYSIS ================= */
         stage('Static Analysis') {
             parallel {
 
@@ -80,6 +83,7 @@ pipeline {
             }
         }
 
+        /* ================= REPORTS ================= */
         stage('Publish HTML Reports') {
             steps {
                 container('tools') {
@@ -104,39 +108,43 @@ pipeline {
             }
         }
 
+        /* ================= DEPLOY ================= */
         stage('Deploy App in Kubernetes') {
             steps {
                 container('tools') {
                     sh '''
-                        echo "📦 Deploying application to namespace: ${APP_NAMESPACE}"
+echo "📦 Deploying to namespace: ${APP_NAMESPACE}"
 
-                        # Deployments
-                        kubectl apply -f infra/k8s/auth-deployment.yaml -n ${APP_NAMESPACE}
-                        kubectl apply -f infra/k8s/backend-deployment.yaml -n ${APP_NAMESPACE}
-                        kubectl apply -f infra/k8s/fronted-deployment.yaml -n ${APP_NAMESPACE}
+echo "📄 Deployments"
+kubectl apply -f infra/k8s/auth-deployment.yaml -n ${APP_NAMESPACE}
+kubectl apply -f infra/k8s/backend-deployment.yaml -n ${APP_NAMESPACE}
+kubectl apply -f infra/k8s/fronted-deployment.yaml -n ${APP_NAMESPACE}
+kubectl apply -f infra/k8s/nginx-deployment.yaml -n ${APP_NAMESPACE}
 
-                        # Services
-                        kubectl apply -f infra/k8s/service-auth.yaml -n ${APP_NAMESPACE}
-                        kubectl apply -f infra/k8s/service-backend.yaml -n ${APP_NAMESPACE}
-                        kubectl apply -f infra/k8s/service-fronted.yaml -n ${APP_NAMESPACE}
+echo "📄 Services"
+kubectl apply -f infra/k8s/service-auth.yaml -n ${APP_NAMESPACE}
+kubectl apply -f infra/k8s/service-backend.yaml -n ${APP_NAMESPACE}
+kubectl apply -f infra/k8s/service-fronted.yaml -n ${APP_NAMESPACE}
 
-                        # HPA & KEDA (מניעת כשל הרשאות)
-                        kubectl apply -f infra/k8s/auth-hpa.yaml -n ${APP_NAMESPACE} || true
-                        kubectl apply -f infra/k8s/backend-hpa.yaml -n ${APP_NAMESPACE} || true
-                        kubectl apply -f infra/k8s/frontend-hpa.yaml -n ${APP_NAMESPACE} || true
-                        kubectl apply -f infra/k8s/auth-keda.yaml -n ${APP_NAMESPACE} || true
-                        kubectl apply -f infra/k8s/backend-keda.yaml -n ${APP_NAMESPACE} || true
-                        kubectl apply -f infra/k8s/fronted-keda.yaml -n ${APP_NAMESPACE} || true
+echo "📄 Autoscaling (ignore RBAC failures)"
+kubectl apply -f infra/k8s/auth-hpa.yaml -n ${APP_NAMESPACE} || true
+kubectl apply -f infra/k8s/backend-hpa.yaml -n ${APP_NAMESPACE} || true
+kubectl apply -f infra/k8s/frontend-hpa.yaml -n ${APP_NAMESPACE} || true
 
-                        # Ingress & PVC
-                        kubectl apply -f infra/k8s/ingress.yaml -n ${APP_NAMESPACE} || true
-                        kubectl apply -f infra/k8s/nginx-pvc.yaml -n ${APP_NAMESPACE} || true
+kubectl apply -f infra/k8s/auth-keda.yaml -n ${APP_NAMESPACE} || true
+kubectl apply -f infra/k8s/backend-keda.yaml -n ${APP_NAMESPACE} || true
+kubectl apply -f infra/k8s/fronted-keda.yaml -n ${APP_NAMESPACE} || true
 
-                        echo "⏳ Waiting for deployments rollout"
-                        kubectl rollout status deployment/auth-deployment -n ${APP_NAMESPACE}
-                        kubectl rollout status deployment/backend-deployment -n ${APP_NAMESPACE}
-                        kubectl rollout status deployment/fronted-deployment -n ${APP_NAMESPACE}
-                    '''
+echo "📄 Ingress & PVC"
+kubectl apply -f infra/k8s/ingress.yaml -n ${APP_NAMESPACE} || true
+kubectl apply -f infra/k8s/nginx-pvc.yaml -n ${APP_NAMESPACE} || true
+
+echo "⏳ Rollout status"
+kubectl rollout status deployment/auth-deployment -n ${APP_NAMESPACE}
+kubectl rollout status deployment/backend-deployment -n ${APP_NAMESPACE}
+kubectl rollout status deployment/frontend-deployment -n ${APP_NAMESPACE}
+kubectl rollout status deployment/nginx-deployment -n ${APP_NAMESPACE}
+'''
                 }
             }
         }
@@ -144,13 +152,14 @@ pipeline {
 
     post {
         success {
-            echo "✅ הפייפליין הסתיים בהצלחה מלאה"
+            echo "✅ Pipeline completed successfully"
         }
         unstable {
-            echo "⚠️ הפייפליין הסתיים עם אזהרות (לינט / בדיקות)"
+            echo "⚠️ Pipeline completed with warnings (tests / lint)"
         }
         failure {
-            echo "❌ הפייפליין נכשל – בדקי לוגים"
+            echo "❌ Pipeline failed – check logs"
         }
     }
 }
+
