@@ -19,11 +19,4 @@ spec:
       enabled: true
     syncOptions:
       - CreateNamespace=true
-      - SkipSchemaValidation=true
-  ignoreDifferences:
-    - group: autoscaling
-      kind: HorizontalPodAutoscaler
-      jsonPointers:
-      - /spec/replicas
-    - group: keda.sh
-      kind: ScaledObject
+
