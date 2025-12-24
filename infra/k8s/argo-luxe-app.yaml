@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: luxe-jewelry-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/nofar-int/Luxe-Jewelry-Store-K8s.git
+    targetRevision: main
+    path: infra/k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demo-app
+  syncPolicy:
+    automated:
+      prune: true          # מסיר משאבים שנמחקו מהריפו
+      selfHeal: true       # מחזיר משאבים שנשתנו ידנית למצב מהריפו
+      enabled: true
+    syncOptions:
+      - SkipHooks=true        # מתעלם מה־webhooks (HPA/KEDA)
+      - CreateNamespace=true  # אם הניימספייס לא קיים
