@@ -2,9 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: luxe-jewelry-app
-  namespace: argocd
 spec:
-  project: default
   source:
     repoURL: https://github.com/nofar-int/Luxe-Jewelry-Store-K8s.git
     path: infra/k8s
@@ -14,23 +12,18 @@ spec:
     namespace: demo-app
   syncPolicy:
     automated:
-      prune: true
-      selfHeal: true
-      enabled: true
-    syncOptions:
-      - CreateNamespace=true
-      - SkipDryRunOnMissingResource=true
+      prune: false
+      selfHeal: false
   ignoreDifferences:
-    # HPA – עוקפים בעיות גרסה / webhook
     - group: autoscaling
       kind: HorizontalPodAutoscaler
       jsonPointers:
         - /spec
-    # KEDA – במקרה של scaledobjects
     - group: keda.sh
       kind: ScaledObject
       jsonPointers:
         - /spec
+
 
 
 
