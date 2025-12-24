@@ -19,4 +19,24 @@ spec:
       enabled: true
     syncOptions:
       - CreateNamespace=true
+      - SkipSchemaValidation=true
+      - ApplyOutOfSyncOnly=true
+      - ServerSideApply=true
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: auth-deployment
+      jsonPointers:
+        - /spec
+    - group: apps
+      kind: Deployment
+      name: backend-deployment
+      jsonPointers:
+        - /spec
+    - group: apps
+      kind: Deployment
+      name: frontend-deployment
+      jsonPointers:
+        - /spec
+
 
