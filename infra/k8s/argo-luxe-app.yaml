@@ -19,24 +19,18 @@ spec:
       enabled: true
     syncOptions:
       - CreateNamespace=true
-      - SkipSchemaValidation=true
-      - ApplyOutOfSyncOnly=true
-      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
   ignoreDifferences:
-    - group: apps
-      kind: Deployment
-      name: auth-deployment
+    # HPA – עוקפים בעיות גרסה / webhook
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
       jsonPointers:
         - /spec
-    - group: apps
-      kind: Deployment
-      name: backend-deployment
+    # KEDA – במקרה של scaledobjects
+    - group: keda.sh
+      kind: ScaledObject
       jsonPointers:
         - /spec
-    - group: apps
-      kind: Deployment
-      name: frontend-deployment
-      jsonPointers:
-        - /spec
+
 
 
