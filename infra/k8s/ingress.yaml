@@ -29,7 +29,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: jewelry-store-service
+                name: frontend-service
                 port:
                   number: 3000
 

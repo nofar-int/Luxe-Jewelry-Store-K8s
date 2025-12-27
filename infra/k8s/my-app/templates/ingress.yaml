@@ -29,9 +29,10 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: frontend-service-v4
+                name: frontend-service-v4   # ← תיקון קריטי
                 port:
                   number: 3000
+
 
 
 
